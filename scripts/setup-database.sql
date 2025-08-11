@@ -4,13 +4,20 @@
 -- Enable Row Level Security
 ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret-here';
 
--- Create users table
+-- Create users table with updated structure
 CREATE TABLE IF NOT EXISTS users (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     invited BOOLEAN DEFAULT FALSE,
-    full_name VARCHAR(255) NOT NULL,
-    shipping_address TEXT NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    address1 VARCHAR(500) NOT NULL,
+    address2 VARCHAR(500),
+    city VARCHAR(255) NOT NULL,
+    state VARCHAR(255) NOT NULL,
+    zip_code VARCHAR(20) NOT NULL,
+    country VARCHAR(255) NOT NULL DEFAULT 'United States',
+    phone_number VARCHAR(50) NOT NULL,
     order_submitted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -19,6 +26,17 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS orders (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    size VARCHAR(10) NOT NULL,
+    address1 VARCHAR(500) NOT NULL,
+    address2 VARCHAR(500),
+    city VARCHAR(255) NOT NULL,
+    state VARCHAR(255) NOT NULL,
+    zip_code VARCHAR(20) NOT NULL,
+    country VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(50) NOT NULL,
     date_submitted TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -58,14 +76,14 @@ CREATE POLICY "Service role can manage inventory" ON inventory
 
 -- Insert initial inventory data
 INSERT INTO inventory (sku, name, quantity_available) 
-VALUES ('ALT-SWAG-001', 'Alteryx Employee Swag Pack', 100)
+VALUES ('ALT-SWAG-001', 'New Hire Bundle', 100)
 ON CONFLICT (sku) DO NOTHING;
 
 -- Insert sample users (replace with actual data)
-INSERT INTO users (email, invited, full_name, shipping_address, order_submitted) 
+INSERT INTO users (email, invited, first_name, last_name, address1, address2, city, state, zip_code, country, phone_number, order_submitted) 
 VALUES 
-    ('john.doe@alteryx.com', true, 'John Doe', '123 Main St, San Francisco, CA 94105', false),
-    ('jane.smith@alteryx.com', true, 'Jane Smith', '456 Oak Ave, New York, NY 10001', false)
+    ('john.doe@alteryx.com', true, 'John', 'Doe', '123 Main St', 'Apt 4B', 'San Francisco', 'CA', '94105', 'United States', '+1-555-123-4567', false),
+    ('jane.smith@alteryx.com', true, 'Jane', 'Smith', '456 Oak Ave', '', 'New York', 'NY', '10001', 'United States', '+1-555-987-6543', false)
 ON CONFLICT (email) DO NOTHING;
 
 -- Create indexes for better performance
