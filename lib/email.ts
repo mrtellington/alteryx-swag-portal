@@ -5,6 +5,8 @@ interface OrderConfirmationEmailData {
   fullName: string
   orderId: string
   shippingAddress: string
+  size?: string
+  isAdminNotification?: boolean
 }
 
 const transporter = nodemailer.createTransport({
@@ -18,7 +20,7 @@ const transporter = nodemailer.createTransport({
 })
 
 export async function sendOrderConfirmationEmail(data: OrderConfirmationEmailData) {
-  const { to, fullName, orderId, shippingAddress } = data
+  const { to, fullName, orderId, shippingAddress, size, isAdminNotification } = data
 
   const emailHtml = `
     <!DOCTYPE html>
@@ -26,7 +28,7 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationEmailDat
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Order Confirmation - Alteryx Swag</title>
+      <title>${isAdminNotification ? 'New Order Notification' : 'Order Confirmation'} - Alteryx Swag</title>
       <style>
         body {
           font-family: 'Inter', Arial, sans-serif;
@@ -72,27 +74,42 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationEmailDat
           color: #666;
           font-size: 14px;
         }
+        .admin-notice {
+          background: #fff3cd;
+          border: 1px solid #ffeaa7;
+          padding: 15px;
+          border-radius: 6px;
+          margin: 20px 0;
+        }
       </style>
     </head>
     <body>
       <div class="header">
-        <h1>🎉 Order Confirmed!</h1>
-        <p>Thank you for your Alteryx swag order</p>
+        <h1>${isAdminNotification ? '📦 New Order Received' : '🎉 Order Confirmed!'}</h1>
+        <p>${isAdminNotification ? 'New Alteryx New Hire Bundle Order' : 'Thank you for your Alteryx swag order'}</p>
       </div>
       
       <div class="content">
-        <h2>Hello ${fullName},</h2>
+        <h2>${isAdminNotification ? 'New Order Details' : `Hello ${fullName},`}</h2>
         
-        <p>Your order has been successfully placed and confirmed. Here are your order details:</p>
+        ${isAdminNotification ? 
+          `<div class="admin-notice">
+            <strong>Admin Notification:</strong> A new order has been placed for the Alteryx New Hire Bundle.
+          </div>` : 
+          '<p>Your order has been successfully placed and confirmed. Here are your order details:</p>'
+        }
         
         <div class="order-details">
           <h3>Order Information</h3>
           <p><strong>Order ID:</strong> ${orderId}</p>
-          <p><strong>Product:</strong> Alteryx Swag Item</p>
+          <p><strong>Customer:</strong> ${fullName}</p>
+          <p><strong>Product:</strong> Alteryx New Hire Bundle</p>
+          <p><strong>Size:</strong> ${size || 'Not specified'}</p>
           <p><strong>Total:</strong> FREE</p>
           <p><strong>Shipping Address:</strong><br>${shippingAddress}</p>
         </div>
         
+        ${!isAdminNotification ? `
         <p>Your exclusive Alteryx swag will be shipped to the address provided. You'll receive tracking information once your order ships.</p>
         
         <p><strong>Important Notes:</strong></p>
@@ -100,11 +117,16 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationEmailDat
           <li>This is your one-time order limit</li>
           <li>Shipping is free</li>
           <li>Allow 2-3 weeks for delivery</li>
+          <li>International shipping available</li>
         </ul>
         
         <p>If you have any questions about your order, please contact the Alteryx team.</p>
         
         <p>Thank you for being part of the Alteryx family!</p>
+        ` : `
+        <p><strong>Action Required:</strong> Please process this order and ship the New Hire Bundle to the customer.</p>
+        <p><strong>Shipping Notes:</strong> This order qualifies for free shipping. International orders may require additional customs documentation.</p>
+        `}
         
         <div class="footer">
           <p>© 2024 Alteryx, Inc. All rights reserved.</p>
@@ -116,28 +138,40 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationEmailDat
   `
 
   const emailText = `
-Order Confirmation - Alteryx Swag
+${isAdminNotification ? 'New Order Notification' : 'Order Confirmation'} - Alteryx Swag
 
-Hello ${fullName},
+${isAdminNotification ? 'New Order Details' : `Hello ${fullName},`}
 
-Your order has been successfully placed and confirmed.
+${isAdminNotification ? 
+  'Admin Notification: A new order has been placed for the Alteryx New Hire Bundle.' : 
+  'Your order has been successfully placed and confirmed.'
+}
 
 Order Information:
 - Order ID: ${orderId}
-- Product: Alteryx Swag Item
+- Customer: ${fullName}
+- Product: Alteryx New Hire Bundle
+- Size: ${size || 'Not specified'}
 - Total: FREE
 - Shipping Address: ${shippingAddress}
 
+${!isAdminNotification ? `
 Your exclusive Alteryx swag will be shipped to the address provided. You'll receive tracking information once your order ships.
 
 Important Notes:
 - This is your one-time order limit
 - Shipping is free
 - Allow 2-3 weeks for delivery
+- International shipping available
 
 If you have any questions about your order, please contact the Alteryx team.
 
 Thank you for being part of the Alteryx family!
+` : `
+Action Required: Please process this order and ship the New Hire Bundle to the customer.
+
+Shipping Notes: This order qualifies for free shipping. International orders may require additional customs documentation.
+`}
 
 © 2024 Alteryx, Inc. All rights reserved.
   `
@@ -145,7 +179,7 @@ Thank you for being part of the Alteryx family!
   const mailOptions = {
     from: `"Alteryx Swag Portal" <${process.env.SMTP_USER}>`,
     to: to,
-    subject: 'Order Confirmation - Alteryx Swag',
+    subject: isAdminNotification ? 'New Order Notification - Alteryx New Hire Bundle' : 'Order Confirmation - Alteryx Swag',
     text: emailText,
     html: emailHtml,
   }

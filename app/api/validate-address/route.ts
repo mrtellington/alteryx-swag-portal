@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Call Google Places API to get place details
     const googleResponse = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_address,address_components&key=${googleApiKey}`,
+      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_address,address_components,geometry&key=${googleApiKey}`,
       {
         method: 'GET',
         headers: {
@@ -85,9 +85,9 @@ export async function POST(request: NextRequest) {
         } else {
           validatedComponents.address1 += (validatedComponents.address1 ? ' ' : '') + text
         }
-      } else if (types.includes('locality')) {
+      } else if (types.includes('locality') || types.includes('sublocality')) {
         validatedComponents.city = text
-      } else if (types.includes('administrative_area_level_1')) {
+      } else if (types.includes('administrative_area_level_1') || types.includes('administrative_area_level_2')) {
         validatedComponents.state = text
       } else if (types.includes('postal_code')) {
         validatedComponents.zipCode = text
@@ -97,11 +97,12 @@ export async function POST(request: NextRequest) {
     })
 
     // Check if all required components are present
+    // For international addresses, some components might be named differently
     const missingComponents = []
     if (!validatedComponents.address1) missingComponents.push('street address')
     if (!validatedComponents.city) missingComponents.push('city')
-    if (!validatedComponents.state) missingComponents.push('state')
-    if (!validatedComponents.zipCode) missingComponents.push('zip code')
+    if (!validatedComponents.state) missingComponents.push('state/province')
+    if (!validatedComponents.zipCode) missingComponents.push('postal code')
     if (!validatedComponents.country) missingComponents.push('country')
 
     const isValid = missingComponents.length === 0

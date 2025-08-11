@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Send confirmation email
+    // Send confirmation email to user
     try {
       const fullName = `${firstName} ${lastName}`
       const shippingAddress = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${state} ${zipCode}, ${country}`
@@ -150,9 +150,28 @@ export async function POST(request: NextRequest) {
         fullName,
         orderId: order.id,
         shippingAddress,
+        size,
       })
     } catch (emailError) {
       console.error('Error sending confirmation email:', emailError)
+      // Don't fail the order if email fails
+    }
+
+    // Send admin notification email
+    try {
+      const fullName = `${firstName} ${lastName}`
+      const shippingAddress = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${state} ${zipCode}, ${country}`
+      
+      await sendOrderConfirmationEmail({
+        to: 'admin@whitestonebranding.com',
+        fullName,
+        orderId: order.id,
+        shippingAddress,
+        size,
+        isAdminNotification: true,
+      })
+    } catch (emailError) {
+      console.error('Error sending admin notification email:', emailError)
       // Don't fail the order if email fails
     }
 

@@ -9,12 +9,14 @@ interface SupabaseContextType {
   user: User | null
   profile: any | null
   loading: boolean
+  supabase: any
 }
 
 const SupabaseContext = createContext<SupabaseContextType>({
   user: null,
   profile: null,
   loading: true,
+  supabase: null,
 })
 
 export const useSupabase = () => {
@@ -106,7 +108,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <SupabaseContext.Provider value={{ user, profile, loading }}>
+    <SupabaseContext.Provider value={{ user, profile, loading, supabase }}>
       {children}
     </SupabaseContext.Provider>
   )

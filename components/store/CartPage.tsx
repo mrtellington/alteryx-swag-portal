@@ -18,7 +18,7 @@ declare global {
             input: HTMLInputElement,
             opts?: {
               types?: string[]
-              componentRestrictions?: { country: string }
+              componentRestrictions?: { country?: string }
               fields?: string[]
             }
           ) => {
@@ -31,6 +31,8 @@ declare global {
         }
       }
     }
+    initGoogleMaps: () => void
+    initGoogleMapsDebug: () => void
   }
 }
 
@@ -41,8 +43,8 @@ const checkoutSchema = z.object({
   address1: z.string().min(1, 'Address is required'),
   address2: z.string().optional(),
   city: z.string().min(1, 'City is required'),
-  state: z.string().min(1, 'State is required'),
-  zipCode: z.string().min(1, 'Zip code is required'),
+  state: z.string().min(1, 'State/Province is required'),
+  zipCode: z.string().min(1, 'Postal code is required'),
   country: z.string().min(1, 'Country is required'),
   phoneNumber: z.string().min(1, 'Phone number is required'),
   confirmOrder: z.boolean().refine(val => val === true, 'You must confirm your order'),
@@ -75,6 +77,9 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    trigger,
+    watch,
   } = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -86,7 +91,7 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
       city: profile?.city || '',
       state: profile?.state || '',
       zipCode: profile?.zip_code || '',
-      country: profile?.country || 'United States',
+      country: profile?.country || '',
       phoneNumber: profile?.phone_number || '',
       confirmOrder: false,
     },
@@ -94,35 +99,98 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
 
   // Initialize Google Places Autocomplete
   useEffect(() => {
+    console.log('CartPage useEffect - checking environment variables...')
+    console.log('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY exists:', !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
+    console.log('NEXT_PUBLIC_SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    
     const initAutocomplete = () => {
+      console.log('Initializing Google Maps Autocomplete...')
       if (typeof window !== 'undefined' && window.google && addressInputRef.current) {
+        console.log('Google Maps loaded, creating autocomplete...')
+        console.log('Available Google Maps APIs:', Object.keys(window.google.maps))
+        console.log('Places API available:', !!window.google.maps.places)
+        
         const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
           types: ['address'],
-          componentRestrictions: { country: 'us' },
-          fields: ['place_id', 'formatted_address']
+          fields: ['place_id', 'formatted_address', 'address_components']
+          // No componentRestrictions means worldwide search
         })
 
         autocomplete.addListener('place_changed', () => {
+          console.log('Place changed event fired')
           const place = autocomplete.getPlace()
+          console.log('Selected place:', place)
+          console.log('Place ID:', place.place_id)
+          console.log('Formatted address:', place.formatted_address)
           if (place.place_id) {
             getPlaceDetails(place.place_id)
+          } else {
+            console.warn('No place_id found in selected place')
           }
         })
 
+        // Add listener for when user starts typing
+        autocomplete.addListener('place_changed', () => {
+          console.log('Autocomplete suggestions should be visible now')
+        })
+
         autocompleteRef.current = autocomplete
+        console.log('Autocomplete initialized successfully')
+      } else {
+        console.log('Google Maps not available or address input not found')
+        if (typeof window !== 'undefined') {
+          console.log('window.google exists:', !!window.google)
+          console.log('addressInputRef.current exists:', !!addressInputRef.current)
+        }
       }
     }
 
     // Load Google Maps script if not already loaded
     if (typeof window !== 'undefined' && !window.google) {
+      console.log('Loading Google Maps script...')
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyA_hkb41owh55NAXg-PEqeiEC1aTRGfKPg'
+      console.log('API Key length:', apiKey ? apiKey.length : 0)
+      console.log('API Key being used:', apiKey ? 'Present' : 'Missing')
+      
       const script = document.createElement('script')
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`
       script.async = true
       script.defer = true
-      script.onload = initAutocomplete
+      script.onerror = (error) => {
+        console.error('Failed to load Google Maps script:', error)
+        console.error('API Key being used:', apiKey ? 'Present' : 'Missing')
+        console.error('This might be due to:')
+        console.error('1. Invalid API key')
+        console.error('2. Places API not enabled in Google Cloud Console')
+        console.error('3. Billing not enabled for the project')
+        console.error('4. API key restrictions (domain, IP, etc.)')
+      }
+      
+      // Define the callback function globally
+      window.initGoogleMaps = () => {
+        console.log('Google Maps script loaded successfully')
+        console.log('window.google exists:', !!window.google)
+        console.log('window.google.maps exists:', !!(window.google && window.google.maps))
+        console.log('window.google.maps.places exists:', !!(window.google && window.google.maps && window.google.maps.places))
+        console.log('window.google.maps.places.Autocomplete exists:', !!(window.google && window.google.maps && window.google.maps.places && window.google.maps.places.Autocomplete))
+        
+        if (window.google && window.google.maps && window.google.maps.places) {
+          initAutocomplete()
+        } else {
+          console.error('Google Maps Places API not available')
+        }
+      }
+      
       document.head.appendChild(script)
-    } else {
-      initAutocomplete()
+    } else if (typeof window !== 'undefined' && window.google) {
+      console.log('Google Maps already loaded, checking availability...')
+      console.log('window.google.maps.places exists:', !!(window.google && window.google.maps && window.google.maps.places))
+      if (window.google.maps && window.google.maps.places) {
+        initAutocomplete()
+      } else {
+        console.error('Google Maps Places API not available')
+      }
     }
 
     return () => {
@@ -131,6 +199,54 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
       }
     }
   }, [])
+
+  // Watch form values to update address validation status
+  const watchedValues = watch(['address1', 'city', 'state', 'zipCode', 'country'])
+  
+  useEffect(() => {
+    // If all address fields are filled and we have a validated address, keep the validation status
+    const allFieldsFilled = watchedValues.every(value => value && value.trim() !== '')
+    if (allFieldsFilled && addressValidation?.isValid) {
+      setIsAddressValid(true)
+    }
+  }, [watchedValues, addressValidation])
+
+  // Test function to check if autocomplete is working
+  const testAutocomplete = () => {
+    console.log('=== AUTCOMPLETE DEBUG INFO ===')
+    console.log('Environment variables:')
+    console.log('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? 'Present' : 'Missing')
+    console.log('Google Maps loaded:', typeof window !== 'undefined' && !!window.google)
+    console.log('Places API available:', typeof window !== 'undefined' && !!(window.google && window.google.maps && window.google.maps.places))
+    
+    if (autocompleteRef.current) {
+      console.log('Autocomplete instance exists:', !!autocompleteRef.current)
+      console.log('Autocomplete configuration:', autocompleteRef.current)
+    } else {
+      console.log('No autocomplete instance found')
+    }
+    
+    // Test API directly
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyA_hkb41owh55NAXg-PEqeiEC1aTRGfKPg'
+    console.log('Testing API with key:', apiKey.substring(0, 10) + '...')
+    
+    fetch(`https://maps.googleapis.com/maps/api/place/autocomplete/json?input=London&types=address&key=${apiKey}`)
+      .then(response => response.json())
+      .then(data => {
+        console.log('API Test Result:', data)
+        if (data.status === 'OK' && data.predictions && data.predictions.length > 0) {
+          console.log('✅ API is working - found', data.predictions.length, 'suggestions')
+          data.predictions.forEach((pred: any, index: number) => {
+            console.log(`  ${index + 1}. ${pred.description}`)
+          })
+        } else {
+          console.log('❌ API returned error:', data.status, data.error_message)
+        }
+      })
+      .catch(error => {
+        console.error('❌ API test failed:', error)
+      })
+  }
 
   const getPlaceDetails = async (placeId: string) => {
     setIsValidatingAddress(true)
@@ -153,24 +269,18 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
       setAddressValidation(result)
 
       if (result.isValid && result.validatedAddress) {
-        // Populate form fields with validated address
+        // Populate form fields with validated address using React Hook Form
         const { address1, city, state, zipCode, country } = result.validatedAddress
         
-        // Update form values
-        const form = document.querySelector('form') as HTMLFormElement
-        if (form) {
-          const address1Input = form.querySelector('#address1') as HTMLInputElement
-          const cityInput = form.querySelector('#city') as HTMLInputElement
-          const stateInput = form.querySelector('#state') as HTMLInputElement
-          const zipCodeInput = form.querySelector('#zipCode') as HTMLInputElement
-          const countryInput = form.querySelector('#country') as HTMLInputElement
-
-          if (address1Input) address1Input.value = address1
-          if (cityInput) cityInput.value = city
-          if (stateInput) stateInput.value = state
-          if (zipCodeInput) zipCodeInput.value = zipCode
-          if (countryInput) countryInput.value = country
-        }
+        // Update form values using React Hook Form's setValue
+        setValue('address1', address1)
+        setValue('city', city)
+        setValue('state', state)
+        setValue('zipCode', zipCode)
+        setValue('country', country)
+        
+        // Trigger validation to clear any existing errors
+        trigger(['address1', 'city', 'state', 'zipCode', 'country'])
 
         setIsAddressValid(true)
         toast.success('Address validated and populated!')
@@ -199,6 +309,13 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
     // Check if address is valid
     if (!isAddressValid) {
       toast.error('Please select a valid address from the autocomplete suggestions')
+      return
+    }
+
+    // Trigger validation for all fields
+    const isValid = await trigger()
+    if (!isValid) {
+      toast.error('Please fill in all required fields')
       return
     }
 
@@ -346,16 +463,44 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
                   ref={addressInputRef}
                   type="text"
                   id="address1"
-                  placeholder="Start typing your address..."
+                  placeholder="Start typing your address (supports international addresses)..."
                   className={`form-input ${errors.address1 ? 'border-red-500' : ''}`}
                   disabled={isSubmitting}
+                  style={{ position: 'relative', zIndex: 1000 }}
+                  onFocus={() => {
+                    console.log('Address input focused - autocomplete should be active')
+                    console.log('Autocomplete instance:', !!autocompleteRef.current)
+                  }}
+                  onChange={(e) => {
+                    console.log('Address input changed:', e.target.value)
+                    if (e.target.value.length > 3) {
+                      console.log('Should show autocomplete suggestions for:', e.target.value)
+                    }
+                  }}
                 />
                 {errors.address1 && (
                   <p className="mt-1 text-sm text-red-600">{errors.address1.message}</p>
                 )}
                 <p className="mt-1 text-sm text-gray-500">
-                  Start typing to see address suggestions
+                  Start typing to see address suggestions (supports international addresses)
                 </p>
+                <p className="mt-1 text-xs text-blue-600">
+                  Try typing addresses from different countries (e.g., "123 Main St, London" or "456 Rue de la Paix, Paris")
+                </p>
+                <button
+                  type="button"
+                  onClick={testAutocomplete}
+                  className="mt-2 text-xs text-blue-600 underline hover:text-blue-800"
+                >
+                  Test Autocomplete (check console)
+                </button>
+                
+                <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
+                  <p className="font-medium">Quick Test:</p>
+                  <p>1. Type "123 Main St, London" in the address field above</p>
+                  <p>2. You should see suggestions appear</p>
+                  <p>3. Click on a suggestion to auto-fill the form</p>
+                </div>
               </div>
 
               <div>
@@ -422,7 +567,7 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
 
                 <div>
                   <label htmlFor="state" className="form-label">
-                    State
+                    State/Province
                   </label>
                   <input
                     {...register('state')}
@@ -440,7 +585,7 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="zipCode" className="form-label">
-                    Zip Code
+                    Postal Code
                   </label>
                   <input
                     {...register('zipCode')}
@@ -526,6 +671,16 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
                   'Checkout'
                 )}
               </button>
+              
+              {/* Form Status Indicator */}
+              {isAddressValid && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                  <div className="flex items-center text-sm text-green-800">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span>Address validated and form ready for submission</span>
+                  </div>
+                </div>
+              )}
             </form>
           </div>
 
@@ -565,7 +720,8 @@ export function CartPage({ selectedSize, onBack, onComplete, user, profile }: Ca
                 <Truck className="h-4 w-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium">Shipping Information</p>
-                  <p>Your order will ship via USPS Ground Advantage and take up to 3 business days.</p>
+                  <p>Your order will ship via USPS Ground Advantage (domestic) or USPS International (international) and take up to 3 business days for domestic orders.</p>
+                  <p className="mt-1 text-xs">International orders may take 2-3 weeks for delivery.</p>
                 </div>
               </div>
             </div>
