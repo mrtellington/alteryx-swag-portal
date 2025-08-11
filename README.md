@@ -39,4 +39,4 @@ Use [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) to track your progress.
 - [x] GitHub secrets configured
 - [ ] **Deploying to Google Cloud Run...** 🚀
 
-<!-- Deployment trigger: 2024-01-15 -->
+<!-- Deployment trigger: 2024-01-15 - Fixed GCP service account key format -->
