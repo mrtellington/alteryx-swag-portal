@@ -97,3 +97,4 @@ The application is automatically deployed to Google Cloud Run via GitHub Actions
 
 Private - Alteryx Internal Use Only
 # Trigger deployment with fixed GCP service account key
+# Test deployment with properly formatted GCP service account key
