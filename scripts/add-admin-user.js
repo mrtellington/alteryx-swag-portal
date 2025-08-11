@@ -5,15 +5,15 @@ const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-async function addUser() {
+async function addAdminUser() {
   try {
     const { data, error } = await supabase
       .from('users')
       .insert({
-        email: 'tod.ellington@whitestonebranding.com',
+        email: 'admin@whitestonebranding.com',
         invited: true,
-        first_name: 'Tod',
-        last_name: 'Ellington',
+        first_name: 'Admin',
+        last_name: 'User',
         address1: 'Please update with your address',
         city: 'Please update',
         state: 'Please update',
@@ -26,31 +26,31 @@ async function addUser() {
 
     if (error) {
       if (error.code === '23505') {
-        console.log('✅ User already exists, updating...')
+        console.log('✅ Admin user already exists, updating...')
         const { data: updateData, error: updateError } = await supabase
           .from('users')
           .update({
             invited: true,
-            first_name: 'Tod',
-            last_name: 'Ellington'
+            first_name: 'Admin',
+            last_name: 'User'
           })
-          .eq('email', 'tod.ellington@whitestonebranding.com')
+          .eq('email', 'admin@whitestonebranding.com')
           .select()
 
         if (updateError) {
-          console.error('❌ Error updating user:', updateError)
+          console.error('❌ Error updating admin user:', updateError)
         } else {
-          console.log('✅ User updated successfully:', updateData)
+          console.log('✅ Admin user updated successfully:', updateData)
         }
       } else {
-        console.error('❌ Error adding user:', error)
+        console.error('❌ Error adding admin user:', error)
       }
     } else {
-      console.log('✅ User added successfully:', data)
+      console.log('✅ Admin user added successfully:', data)
     }
   } catch (err) {
     console.error('❌ Unexpected error:', err)
   }
 }
 
-addUser()
+addAdminUser()
