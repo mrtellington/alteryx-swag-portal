@@ -29,9 +29,18 @@ jobs:
       run: |
         gcloud config set project ${{ env.PROJECT_ID }}
         gcloud config set run/region ${{ env.REGION }}
+        echo "Project: ${{ env.PROJECT_ID }}"
+        echo "Region: ${{ env.REGION }}"
+        echo "Service: ${{ env.SERVICE_NAME }}"
     
-    - name: Deploy to Cloud Run (Basic)
+    - name: Check current services
       run: |
+        echo "Current Cloud Run services:"
+        gcloud run services list --region=${{ env.REGION }}
+    
+    - name: Try deployment with verbose logging
+      run: |
+        echo "Attempting deployment with verbose logging..."
         gcloud run deploy ${{ env.SERVICE_NAME }} \
           --source . \
           --platform managed \
@@ -39,11 +48,13 @@ jobs:
           --allow-unauthenticated \
           --memory 512Mi \
           --cpu 1 \
-          --max-instances 10
+          --max-instances 10 \
+          --verbosity=debug
+      continue-on-error: true
     
-    - name: Show service URL
+    - name: Check deployment status
       run: |
-        gcloud run services describe ${{ env.SERVICE_NAME }} \
-          --platform managed \
-          --region ${{ env.REGION }} \
-          --format 'value(status.url)'
+        echo "Checking deployment status..."
+        gcloud run services list --region=${{ env.REGION }}
+        echo "Service details:"
+        gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} || echo "Service not found"
