@@ -21,6 +21,12 @@ export default function HomePage() {
       return
     }
 
+    // Add a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.log('Loading timeout reached, forcing loading to false')
+      setLoading(false)
+    }, 10000) // 10 second timeout
+
     // Check for hash fragment authentication first
     const handleHashAuth = async () => {
       const hash = window.location.hash.substring(1)
@@ -52,6 +58,7 @@ export default function HomePage() {
             if (error) {
               console.error('Error setting session from hash:', error)
               toast.error('Authentication failed')
+              setLoading(false)
               return
             }
 
@@ -63,27 +70,33 @@ export default function HomePage() {
               window.history.replaceState({}, document.title, window.location.pathname)
               
               // Get user profile and check authorization
-              const userProfile = await getUserProfile(data.session.user.id)
-              setProfile(userProfile)
-              
-              if (userProfile) {
-                const isInvited = userProfile.invited
-                const hasOrdered = userProfile.order_submitted
+              try {
+                const userProfile = await getUserProfile(data.session.user.id)
+                setProfile(userProfile)
                 
-                if (hasOrdered) {
-                  toast.error('You have already redeemed your New Hire Bundle. Thank you!')
-                  await supabase.auth.signOut()
-                  setAuthorized(false)
-                } else if (!isInvited) {
-                  toast.error('You are not authorized to access the New Hire Bundle. Please contact your administrator.')
-                  await supabase.auth.signOut()
-                  setAuthorized(false)
+                if (userProfile) {
+                  const isInvited = userProfile.invited
+                  const hasOrdered = userProfile.order_submitted
+                  
+                  if (hasOrdered) {
+                    toast.error('You have already redeemed your New Hire Bundle. Thank you!')
+                    await supabase.auth.signOut()
+                    setAuthorized(false)
+                  } else if (!isInvited) {
+                    toast.error('You are not authorized to access the New Hire Bundle. Please contact your administrator.')
+                    await supabase.auth.signOut()
+                    setAuthorized(false)
+                  } else {
+                    setAuthorized(true)
+                  }
                 } else {
-                  setAuthorized(true)
+                  toast.error('User profile not found. Please contact your administrator.')
+                  await supabase.auth.signOut()
+                  setAuthorized(false)
                 }
-              } else {
-                toast.error('User profile not found. Please contact your administrator.')
-                await supabase.auth.signOut()
+              } catch (profileError) {
+                console.error('Error getting user profile:', profileError)
+                toast.error('Error loading user profile')
                 setAuthorized(false)
               }
               
@@ -91,16 +104,20 @@ export default function HomePage() {
               return
             } else {
               console.log('No session data returned from setSession')
+              setLoading(false)
             }
           } catch (error) {
             console.error('Error processing hash authentication:', error)
             toast.error('Authentication failed')
+            setLoading(false)
           }
         } else {
           console.log('Missing required tokens in hash fragment')
+          setLoading(false)
         }
       } else {
         console.log('No hash fragment found in URL')
+        setLoading(false)
       }
     }
 
@@ -152,31 +169,37 @@ export default function HomePage() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: any) => {
+        console.log('Auth state change:', event, session ? 'has user' : 'no user')
         setUser(session?.user ?? null)
         
         if (session?.user) {
-          const userProfile = await getUserProfile(session.user.id)
-          setProfile(userProfile)
-          
-          // Check if user is authorized
-          if (userProfile) {
-            const isInvited = userProfile.invited
-            const hasOrdered = userProfile.order_submitted
+          try {
+            const userProfile = await getUserProfile(session.user.id)
+            setProfile(userProfile)
             
-            if (hasOrdered) {
-              toast.error('You have already redeemed your New Hire Bundle. Thank you!')
-              await supabase.auth.signOut()
-              setAuthorized(false)
-            } else if (!isInvited) {
-              toast.error('You are not authorized to access the New Hire Bundle. Please contact your administrator.')
-              await supabase.auth.signOut()
-              setAuthorized(false)
+            // Check if user is authorized
+            if (userProfile) {
+              const isInvited = userProfile.invited
+              const hasOrdered = userProfile.order_submitted
+              
+              if (hasOrdered) {
+                toast.error('You have already redeemed your New Hire Bundle. Thank you!')
+                await supabase.auth.signOut()
+                setAuthorized(false)
+              } else if (!isInvited) {
+                toast.error('You are not authorized to access the New Hire Bundle. Please contact your administrator.')
+                await supabase.auth.signOut()
+                setAuthorized(false)
+              } else {
+                setAuthorized(true)
+              }
             } else {
-              setAuthorized(true)
+              toast.error('User profile not found. Please contact your administrator.')
+              await supabase.auth.signOut()
+              setAuthorized(false)
             }
-          } else {
-            toast.error('User profile not found. Please contact your administrator.')
-            await supabase.auth.signOut()
+          } catch (error) {
+            console.error('Error getting user profile in auth change:', error)
             setAuthorized(false)
           }
         } else {
@@ -188,7 +211,10 @@ export default function HomePage() {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(loadingTimeout)
+    }
   }, [supabase])
 
   if (loading) {
@@ -197,6 +223,8 @@ export default function HomePage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-alteryx-blue mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-2 text-sm text-gray-500">This may take a few seconds</p>
+          <p className="mt-1 text-xs text-gray-400">If this takes too long, please refresh the page</p>
         </div>
       </div>
     )
