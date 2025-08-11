@@ -23,11 +23,27 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Debug environment
+      run: |
+        echo "Node version: $(node --version)"
+        echo "NPM version: $(npm --version)"
+        echo "Current directory: $(pwd)"
+        echo "Directory contents:"
+        ls -la
+    
     - name: Install dependencies
-      run: npm ci
+      run: |
+        echo "Installing dependencies..."
+        npm ci
+        echo "Dependencies installed successfully"
     
     - name: Build application
-      run: npm run build
+      run: |
+        echo "Building application..."
+        npm run build
+        echo "Build completed successfully"
+        echo "Build output:"
+        ls -la .next
     
     - name: Google Auth
       uses: google-github-actions/auth@v2
@@ -39,22 +55,34 @@ jobs:
     
     - name: Configure gcloud
       run: |
+        echo "Configuring gcloud..."
         gcloud config set project ${{ env.PROJECT_ID }}
         gcloud config set run/region ${{ env.REGION }}
+        echo "Configuration complete"
     
     - name: Enable required APIs
       run: |
-        gcloud services enable cloudbuild.googleapis.com
-        gcloud services enable run.googleapis.com
-        gcloud services enable containerregistry.googleapis.com
+        echo "Enabling APIs..."
+        gcloud services enable cloudbuild.googleapis.com || echo "Cloud Build API already enabled"
+        gcloud services enable run.googleapis.com || echo "Cloud Run API already enabled"
+        gcloud services enable containerregistry.googleapis.com || echo "Container Registry API already enabled"
+        echo "APIs enabled"
     
-    - name: Build and push Docker image
+    - name: Build Docker image
       run: |
+        echo "Building Docker image..."
         docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
+        echo "Docker build completed"
+    
+    - name: Push Docker image
+      run: |
+        echo "Pushing Docker image..."
         docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
+        echo "Docker push completed"
     
     - name: Deploy to Cloud Run
       run: |
+        echo "Deploying to Cloud Run..."
         gcloud run deploy ${{ env.SERVICE_NAME }} \
           --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest \
           --platform managed \
@@ -63,16 +91,19 @@ jobs:
           --memory 512Mi \
           --cpu 1 \
           --max-instances 10
+        echo "Deployment completed"
     
     - name: Update environment variables
       run: |
+        echo "Updating environment variables..."
         gcloud run services update ${{ env.SERVICE_NAME }} \
           --region ${{ env.REGION }} \
           --update-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }},NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }},NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }},SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }},GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }},NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }},NEXT_PUBLIC_APP_URL=${{ secrets.APP_URL }},SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},FROM_EMAIL=${{ secrets.FROM_EMAIL }},WEBHOOK_SECRET=${{ secrets.WEBHOOK_SECRET }}"
+        echo "Environment variables updated"
     
     - name: Show service URL
       run: |
-        echo "Your application is deployed at:"
+        echo "Getting service URL..."
         gcloud run services describe ${{ env.SERVICE_NAME }} \
           --platform managed \
           --region ${{ env.REGION }} \
