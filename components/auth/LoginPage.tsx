@@ -60,26 +60,8 @@ export function LoginPage() {
 
     setIsLoading(true)
     try {
-      // Check user status first
-      const [isInvited, userProfile] = await Promise.all([
-        isUserInvited(data.email),
-        getUserProfileByEmail(data.email)
-      ])
-      
-      const hasOrdered = userProfile?.order_submitted || false
-
-      // If user has already ordered, show message and don't proceed
-      if (hasOrdered) {
-        toast.error('You have already redeemed your New Hire Bundle. Thank you!')
-        return
-      }
-
-      // If user is not invited, show message and don't proceed
-      if (!isInvited) {
-        toast.error('You are not authorized to access the New Hire Bundle. Please contact your administrator.')
-        return
-      }
-
+      // Send magic link directly without checking user status first
+      // We'll check authorization after they authenticate
       await signInWithEmail(data.email)
       setEmailSent(true)
       toast.success('Check your email for the login link!')

@@ -5,12 +5,14 @@ import { User } from '@supabase/supabase-js'
 import { LoginPage } from '@/components/auth/LoginPage'
 import { StorePage } from '@/components/store/StorePage'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
-import { getUserProfile } from '@/lib/auth'
+import { getUserProfile, isUserInvited } from '@/lib/auth'
+import toast from 'react-hot-toast'
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [authorized, setAuthorized] = useState<boolean | null>(null)
   const { supabase } = useSupabase()
 
   useEffect(() => {
@@ -28,6 +30,28 @@ export default function HomePage() {
         if (session?.user) {
           const userProfile = await getUserProfile(session.user.id)
           setProfile(userProfile)
+          
+          // Check if user is authorized
+          if (userProfile) {
+            const isInvited = userProfile.invited
+            const hasOrdered = userProfile.order_submitted
+            
+            if (hasOrdered) {
+              toast.error('You have already redeemed your New Hire Bundle. Thank you!')
+              await supabase.auth.signOut()
+              setAuthorized(false)
+            } else if (!isInvited) {
+              toast.error('You are not authorized to access the New Hire Bundle. Please contact your administrator.')
+              await supabase.auth.signOut()
+              setAuthorized(false)
+            } else {
+              setAuthorized(true)
+            }
+          } else {
+            toast.error('User profile not found. Please contact your administrator.')
+            await supabase.auth.signOut()
+            setAuthorized(false)
+          }
         }
         
         setLoading(false)
@@ -47,8 +71,31 @@ export default function HomePage() {
         if (session?.user) {
           const userProfile = await getUserProfile(session.user.id)
           setProfile(userProfile)
+          
+          // Check if user is authorized
+          if (userProfile) {
+            const isInvited = userProfile.invited
+            const hasOrdered = userProfile.order_submitted
+            
+            if (hasOrdered) {
+              toast.error('You have already redeemed your New Hire Bundle. Thank you!')
+              await supabase.auth.signOut()
+              setAuthorized(false)
+            } else if (!isInvited) {
+              toast.error('You are not authorized to access the New Hire Bundle. Please contact your administrator.')
+              await supabase.auth.signOut()
+              setAuthorized(false)
+            } else {
+              setAuthorized(true)
+            }
+          } else {
+            toast.error('User profile not found. Please contact your administrator.')
+            await supabase.auth.signOut()
+            setAuthorized(false)
+          }
         } else {
           setProfile(null)
+          setAuthorized(null)
         }
         
         setLoading(false)
@@ -74,6 +121,11 @@ export default function HomePage() {
     return <LoginPage />
   }
 
-  // If user is authenticated, show store page
+  // If user is authenticated but not authorized, show login page
+  if (authorized === false) {
+    return <LoginPage />
+  }
+
+  // If user is authenticated and authorized, show store page
   return <StorePage user={user} profile={profile} />
 }
