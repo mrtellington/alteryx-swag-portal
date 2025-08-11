@@ -23,39 +23,11 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
-    - name: Debug environment
-      run: |
-        echo "Node version:"
-        node --version
-        echo "NPM version:"
-        npm --version
-        echo "Current directory:"
-        pwd
-        echo "Directory contents:"
-        ls -la
-    
     - name: Install dependencies
       run: npm ci
     
-    - name: Debug after install
-      run: |
-        echo "Node modules installed:"
-        ls -la node_modules | head -10
-        echo "Package.json contents:"
-        cat package.json
-    
     - name: Build application
-      run: |
-        echo "Starting build..."
-        npm run build
-        echo "Build completed successfully"
-    
-    - name: Debug after build
-      run: |
-        echo "Build output:"
-        ls -la .next
-        echo "Standalone output:"
-        ls -la .next/standalone || echo "No standalone output found"
+      run: npm run build
     
     - name: Google Auth
       uses: google-github-actions/auth@v2
@@ -67,53 +39,24 @@ jobs:
     
     - name: Configure gcloud
       run: |
-        echo "Setting project to: ${{ env.PROJECT_ID }}"
         gcloud config set project ${{ env.PROJECT_ID }}
-        echo "Setting region to: ${{ env.REGION }}"
         gcloud config set run/region ${{ env.REGION }}
-        echo "Current gcloud config:"
-        gcloud config list
-    
-    - name: Check Cloud Run services
-      run: |
-        echo "Listing existing Cloud Run services:"
-        gcloud run services list --region=${{ env.REGION }}
     
     - name: Enable required APIs
       run: |
-        echo "Enabling required Google Cloud APIs..."
         gcloud services enable cloudbuild.googleapis.com
         gcloud services enable run.googleapis.com
         gcloud services enable containerregistry.googleapis.com
-        echo "APIs enabled successfully"
     
-    - name: Check secrets availability
+    - name: Build and push Docker image
       run: |
-        echo "Checking if required secrets are available..."
-        echo "GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID != '' && 'SET' || 'MISSING' }}"
-        echo "SUPABASE_URL: ${{ secrets.SUPABASE_URL != '' && 'SET' || 'MISSING' }}"
-        echo "SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY != '' && 'SET' || 'MISSING' }}"
-        echo "SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' && 'SET' || 'MISSING' }}"
-        echo "GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY != '' && 'SET' || 'MISSING' }}"
-        echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY != '' && 'SET' || 'MISSING' }}"
-        echo "APP_URL: ${{ secrets.APP_URL != '' && 'SET' || 'MISSING' }}"
-        echo "SMTP_HOST: ${{ secrets.SMTP_HOST != '' && 'SET' || 'MISSING' }}"
-        echo "SMTP_PORT: ${{ secrets.SMTP_PORT != '' && 'SET' || 'MISSING' }}"
-        echo "SMTP_USER: ${{ secrets.SMTP_USER != '' && 'SET' || 'MISSING' }}"
-        echo "SMTP_PASS: ${{ secrets.SMTP_PASS != '' && 'SET' || 'MISSING' }}"
-        echo "FROM_EMAIL: ${{ secrets.FROM_EMAIL != '' && 'SET' || 'MISSING' }}"
-        echo "WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET != '' && 'SET' || 'MISSING' }}"
+        docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
+        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
     
-    - name: Deploy to Cloud Run (Basic)
+    - name: Deploy to Cloud Run
       run: |
-        echo "Starting basic deployment to Cloud Run..."
-        echo "Service name: ${{ env.SERVICE_NAME }}"
-        echo "Region: ${{ env.REGION }}"
-        echo "Project: ${{ env.PROJECT_ID }}"
-        
-        # Deploy with minimal configuration first
         gcloud run deploy ${{ env.SERVICE_NAME }} \
-          --source . \
+          --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest \
           --platform managed \
           --region ${{ env.REGION }} \
           --allow-unauthenticated \
@@ -123,14 +66,12 @@ jobs:
     
     - name: Update environment variables
       run: |
-        echo "Updating environment variables..."
         gcloud run services update ${{ env.SERVICE_NAME }} \
           --region ${{ env.REGION }} \
           --update-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }},NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }},NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }},SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }},GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }},NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }},NEXT_PUBLIC_APP_URL=${{ secrets.APP_URL }},SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},FROM_EMAIL=${{ secrets.FROM_EMAIL }},WEBHOOK_SECRET=${{ secrets.WEBHOOK_SECRET }}"
     
     - name: Show service URL
       run: |
-        echo "Getting service URL..."
         gcloud run services describe ${{ env.SERVICE_NAME }} \
           --platform managed \
           --region ${{ env.REGION }} \
