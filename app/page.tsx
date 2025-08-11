@@ -24,14 +24,25 @@ export default function HomePage() {
     // Check for hash fragment authentication first
     const handleHashAuth = async () => {
       const hash = window.location.hash.substring(1)
+      console.log('Current URL:', window.location.href)
+      console.log('Hash fragment:', hash)
+      
       if (hash) {
         console.log('Found hash fragment, processing authentication...')
         const params = new URLSearchParams(hash)
         
         const accessToken = params.get('access_token')
         const refreshToken = params.get('refresh_token')
+        const type = params.get('type')
+
+        console.log('Parsed params:', {
+          accessToken: accessToken ? 'present' : 'missing',
+          refreshToken: refreshToken ? 'present' : 'missing',
+          type: type
+        })
 
         if (accessToken && refreshToken) {
+          console.log('Both tokens found, attempting to set session...')
           try {
             const { data, error } = await supabase.auth.setSession({
               access_token: accessToken,
@@ -78,12 +89,18 @@ export default function HomePage() {
               
               setLoading(false)
               return
+            } else {
+              console.log('No session data returned from setSession')
             }
           } catch (error) {
             console.error('Error processing hash authentication:', error)
             toast.error('Authentication failed')
           }
+        } else {
+          console.log('Missing required tokens in hash fragment')
         }
+      } else {
+        console.log('No hash fragment found in URL')
       }
     }
 

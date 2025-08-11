@@ -71,8 +71,6 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession()
 
-    return () => clearTimeout(timeoutId)
-
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -103,6 +101,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       subscription.unsubscribe()
+      clearTimeout(timeoutId)
       clearTimeout(authTimeoutId)
     }
   }, [])
