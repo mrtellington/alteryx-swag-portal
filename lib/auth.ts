@@ -42,24 +42,16 @@ export const getCurrentUser = async () => {
 }
 
 export const getUserProfile = async (userId: string): Promise<User | null> => {
-  // First get the user's email from Supabase Auth
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  
-  if (userError || !user?.email) {
-    console.error('Error getting user email:', userError)
-    return null
-  }
-
-  // Then query the users table by email
+  // Query the users table by user ID (which now matches the auth user ID)
   const { data, error } = await supabase
     .from('users')
     .select('*')
-    .eq('email', user.email.toLowerCase())
+    .eq('id', userId)
     .single()
 
   if (error) {
     if (error.code === 'PGRST116') {
-      console.log('No user profile found for email:', user.email)
+      console.log('No user profile found for user ID:', userId)
       return null
     }
     console.error('Error getting user profile:', error)
