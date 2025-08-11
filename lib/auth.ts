@@ -1,0 +1,88 @@
+import { supabase } from './supabase'
+import { User } from './supabase'
+
+export const isAlteryxEmail = (email: string): boolean => {
+  const allowedDomains = ['@alteryx.com', '@whitestonebranding.com']
+  return allowedDomains.some(domain => email.toLowerCase().endsWith(domain))
+}
+
+export const signInWithEmail = async (email: string) => {
+  if (!isAlteryxEmail(email)) {
+    throw new Error('Only @alteryx.com email addresses are allowed')
+  }
+
+  const { data, error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+    },
+  })
+
+  if (error) throw error
+  return data
+}
+
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
+}
+
+export const getCurrentUser = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error) throw error
+  return user
+}
+
+export const getUserProfile = async (userId: string): Promise<User | null> => {
+  // First get the user's email from Supabase Auth
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  if (userError || !user?.email) {
+    console.error('Error getting user email:', userError)
+    return null
+  }
+
+  // Then query the users table by email
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', user.email.toLowerCase())
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      console.log('No user profile found for email:', user.email)
+      return null
+    }
+    console.error('Error getting user profile:', error)
+    throw error
+  }
+
+  return data
+}
+
+export const isUserInvited = async (email: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('invited')
+    .eq('email', email.toLowerCase())
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') return false // No rows returned
+    throw error
+  }
+
+  return data?.invited || false
+}
+
+export const hasUserOrdered = async (userId: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('order_submitted')
+    .eq('id', userId)
+    .single()
+
+  if (error) throw error
+  return data?.order_submitted || false
+}
