@@ -10,9 +10,22 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, fullName, email, shippingAddress } = body
+    const { 
+      userId, 
+      firstName, 
+      lastName, 
+      email, 
+      size,
+      address1, 
+      address2, 
+      city, 
+      state, 
+      zipCode, 
+      country, 
+      phoneNumber 
+    } = body
 
-    if (!userId || !fullName || !email || !shippingAddress) {
+    if (!userId || !firstName || !lastName || !email || !size || !address1 || !city || !state || !zipCode || !country || !phoneNumber) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -67,6 +80,17 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .insert({
         user_id: userId,
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        size: size,
+        address1: address1,
+        address2: address2 || null,
+        city: city,
+        state: state,
+        zip_code: zipCode,
+        country: country,
+        phone_number: phoneNumber,
         date_submitted: new Date().toISOString(),
       })
       .select()
@@ -110,6 +134,9 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email
     try {
+      const fullName = `${firstName} ${lastName}`
+      const shippingAddress = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${state} ${zipCode}, ${country}`
+      
       await sendOrderConfirmationEmail({
         to: email,
         fullName,

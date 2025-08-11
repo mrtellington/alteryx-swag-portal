@@ -15,8 +15,15 @@ export interface User {
   id: string
   email: string
   invited: boolean
-  full_name: string
-  shipping_address: string
+  first_name: string
+  last_name: string
+  address1: string
+  address2?: string
+  city: string
+  state: string
+  zip_code: string
+  country: string
+  phone_number: string
   order_submitted: boolean
   created_at: string
 }
@@ -24,6 +31,17 @@ export interface User {
 export interface Order {
   id: string
   user_id: string
+  first_name: string
+  last_name: string
+  email: string
+  size: string
+  address1: string
+  address2?: string
+  city: string
+  state: string
+  zip_code: string
+  country: string
+  phone_number: string
   date_submitted: string
 }
 
