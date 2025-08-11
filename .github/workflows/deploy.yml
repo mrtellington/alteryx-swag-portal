@@ -87,19 +87,39 @@ jobs:
         gcloud services enable containerregistry.googleapis.com
         echo "APIs enabled successfully"
     
-    - name: Deploy to Cloud Run
+    - name: Check secrets availability
       run: |
-        echo "Starting deployment to Cloud Run..."
+        echo "Checking if required secrets are available..."
+        echo "GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID != '' && 'SET' || 'MISSING' }}"
+        echo "SUPABASE_URL: ${{ secrets.SUPABASE_URL != '' && 'SET' || 'MISSING' }}"
+        echo "SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY != '' && 'SET' || 'MISSING' }}"
+        echo "SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' && 'SET' || 'MISSING' }}"
+        echo "GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY != '' && 'SET' || 'MISSING' }}"
+        echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY != '' && 'SET' || 'MISSING' }}"
+        echo "APP_URL: ${{ secrets.APP_URL != '' && 'SET' || 'MISSING' }}"
+        echo "SMTP_HOST: ${{ secrets.SMTP_HOST != '' && 'SET' || 'MISSING' }}"
+        echo "SMTP_PORT: ${{ secrets.SMTP_PORT != '' && 'SET' || 'MISSING' }}"
+        echo "SMTP_USER: ${{ secrets.SMTP_USER != '' && 'SET' || 'MISSING' }}"
+        echo "SMTP_PASS: ${{ secrets.SMTP_PASS != '' && 'SET' || 'MISSING' }}"
+        echo "FROM_EMAIL: ${{ secrets.FROM_EMAIL != '' && 'SET' || 'MISSING' }}"
+        echo "WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET != '' && 'SET' || 'MISSING' }}"
+    
+    - name: Deploy to Cloud Run (Basic)
+      run: |
+        echo "Starting basic deployment to Cloud Run..."
         echo "Service name: ${{ env.SERVICE_NAME }}"
         echo "Region: ${{ env.REGION }}"
         echo "Project: ${{ env.PROJECT_ID }}"
         
-        # Deploy without environment variables first
+        # Deploy with minimal configuration first
         gcloud run deploy ${{ env.SERVICE_NAME }} \
           --source . \
           --platform managed \
           --region ${{ env.REGION }} \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --memory 512Mi \
+          --cpu 1 \
+          --max-instances 10
     
     - name: Update environment variables
       run: |
