@@ -16,7 +16,7 @@ export const isAlteryxEmail = (email: string): boolean => {
 
 export const signInWithEmail = async (email: string) => {
   if (!isAlteryxEmail(email)) {
-    throw new Error('Only @alteryx.com and @whitestonebranding.com email addresses are allowed')
+    throw new Error('Only @alteryx.com email addresses are allowed')
   }
 
   const { data, error } = await supabase.auth.signInWithOtp({

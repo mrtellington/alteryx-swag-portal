@@ -54,23 +54,28 @@ export function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     if (!isAlteryxEmail(data.email)) {
-      toast.error('Only @alteryx.com and @whitestonebranding.com email addresses are allowed')
+      toast.error('Only @alteryx.com email addresses are allowed')
       return
     }
 
     setIsLoading(true)
     try {
       // Check user status first
-      await checkUserStatus(data.email)
+      const [isInvited, userProfile] = await Promise.all([
+        isUserInvited(data.email),
+        getUserProfileByEmail(data.email)
+      ])
+      
+      const hasOrdered = userProfile?.order_submitted || false
 
       // If user has already ordered, show message and don't proceed
-      if (userStatus?.hasOrdered) {
+      if (hasOrdered) {
         toast.error('You have already redeemed your New Hire Bundle. Thank you!')
         return
       }
 
       // If user is not invited, show message and don't proceed
-      if (!userStatus?.isInvited) {
+      if (!isInvited) {
         toast.error('You are not authorized to access the New Hire Bundle. Please contact your administrator.')
         return
       }
@@ -177,7 +182,7 @@ export function LoginPage() {
             )}
             {email && !isValidEmail && (
               <p className="mt-1 text-sm text-red-600">
-                Only @alteryx.com and @whitestonebranding.com email addresses are allowed
+                Only @alteryx.com email addresses are allowed
               </p>
             )}
           </div>
