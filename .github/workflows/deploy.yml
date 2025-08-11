@@ -3,8 +3,6 @@ name: Deploy to Google Cloud Run
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -14,10 +12,10 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -38,6 +36,11 @@ jobs:
     
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
+    
+    - name: Configure gcloud
+      run: |
+        gcloud config set project ${{ env.PROJECT_ID }}
+        gcloud config set run/region ${{ env.REGION }}
     
     - name: Deploy to Cloud Run
       run: |
