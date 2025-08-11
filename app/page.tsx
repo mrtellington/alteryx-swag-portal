@@ -21,6 +21,75 @@ export default function HomePage() {
       return
     }
 
+    // Check for hash fragment authentication first
+    const handleHashAuth = async () => {
+      const hash = window.location.hash.substring(1)
+      if (hash) {
+        console.log('Found hash fragment, processing authentication...')
+        const params = new URLSearchParams(hash)
+        
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+
+        if (accessToken && refreshToken) {
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            })
+
+            if (error) {
+              console.error('Error setting session from hash:', error)
+              toast.error('Authentication failed')
+              return
+            }
+
+            if (data.session) {
+              console.log('Authentication successful from hash')
+              setUser(data.session.user)
+              
+              // Clear the hash from URL
+              window.history.replaceState({}, document.title, window.location.pathname)
+              
+              // Get user profile and check authorization
+              const userProfile = await getUserProfile(data.session.user.id)
+              setProfile(userProfile)
+              
+              if (userProfile) {
+                const isInvited = userProfile.invited
+                const hasOrdered = userProfile.order_submitted
+                
+                if (hasOrdered) {
+                  toast.error('You have already redeemed your New Hire Bundle. Thank you!')
+                  await supabase.auth.signOut()
+                  setAuthorized(false)
+                } else if (!isInvited) {
+                  toast.error('You are not authorized to access the New Hire Bundle. Please contact your administrator.')
+                  await supabase.auth.signOut()
+                  setAuthorized(false)
+                } else {
+                  setAuthorized(true)
+                }
+              } else {
+                toast.error('User profile not found. Please contact your administrator.')
+                await supabase.auth.signOut()
+                setAuthorized(false)
+              }
+              
+              setLoading(false)
+              return
+            }
+          } catch (error) {
+            console.error('Error processing hash authentication:', error)
+            toast.error('Authentication failed')
+          }
+        }
+      }
+    }
+
+    // Process hash authentication first
+    handleHashAuth()
+
     // Get initial session
     const getInitialSession = async () => {
       try {
