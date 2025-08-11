@@ -17,15 +17,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Debug GCP_SA_KEY
-      run: |
-        echo "Checking GCP_SA_KEY..."
-        if [ -n "${{ secrets.GCP_SA_KEY }}" ]; then
-          echo "GCP_SA_KEY is set"
-          echo "Length: ${#GCP_SA_KEY}"
-        else
-          echo "GCP_SA_KEY is not set"
-        fi
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
     
     - name: Google Auth
       uses: google-github-actions/auth@v2
@@ -40,11 +42,14 @@ jobs:
         gcloud config set project ${{ env.PROJECT_ID }}
         gcloud config set run/region ${{ env.REGION }}
     
+    - name: Build and deploy with Cloud Build
+      run: |
+        gcloud builds submit --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
+    
     - name: Deploy to Cloud Run
       run: |
-        echo "Deploying to Cloud Run..."
         gcloud run deploy ${{ env.SERVICE_NAME }} \
-          --source . \
+          --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest \
           --platform managed \
           --region ${{ env.REGION }} \
           --allow-unauthenticated \
@@ -52,9 +57,14 @@ jobs:
           --cpu 1 \
           --max-instances 10
     
+    - name: Update environment variables
+      run: |
+        gcloud run services update ${{ env.SERVICE_NAME }} \
+          --region ${{ env.REGION }} \
+          --update-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }},NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }},NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }},SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }},GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }},NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }},NEXT_PUBLIC_APP_URL=${{ secrets.APP_URL }},SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},FROM_EMAIL=${{ secrets.FROM_EMAIL }},WEBHOOK_SECRET=${{ secrets.WEBHOOK_SECRET }}"
+    
     - name: Show service URL
       run: |
-        echo "Getting service URL..."
         gcloud run services describe ${{ env.SERVICE_NAME }} \
           --platform managed \
           --region ${{ env.REGION }} \
