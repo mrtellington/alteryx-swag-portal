@@ -19,6 +19,9 @@ export const signInWithEmail = async (email: string) => {
     throw new Error('Only @alteryx.com email addresses are allowed')
   }
 
+  console.log('Attempting to send magic link to:', email)
+  console.log('Redirect URL:', `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`)
+
   const { data, error } = await supabase.auth.signInWithOtp({
     email,
     options: {
@@ -26,7 +29,12 @@ export const signInWithEmail = async (email: string) => {
     },
   })
 
-  if (error) throw error
+  if (error) {
+    console.error('Supabase auth error:', error)
+    throw error
+  }
+  
+  console.log('Magic link sent successfully:', data)
   return data
 }
 
