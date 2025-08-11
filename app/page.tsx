@@ -41,7 +41,7 @@ export default function HomePage() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string, session) => {
+      async (event: string, session: any) => {
         setUser(session?.user ?? null)
         
         if (session?.user) {
