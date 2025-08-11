@@ -104,3 +104,6 @@ jspm_packages/
 # Temporary folders
 tmp/
 temp/
+
+# Google Cloud service account key
+gcp-service-account-key.json
