@@ -39,20 +39,34 @@ jobs:
     
     - name: Configure gcloud
       run: |
+        echo "Setting project to: ${{ env.PROJECT_ID }}"
         gcloud config set project ${{ env.PROJECT_ID }}
+        echo "Setting region to: ${{ env.REGION }}"
         gcloud config set run/region ${{ env.REGION }}
+        echo "Current gcloud config:"
+        gcloud config list
     
-    - name: Deploy to Cloud Run
+    - name: Check Cloud Run services
       run: |
+        echo "Listing existing Cloud Run services:"
+        gcloud run services list --region=${{ env.REGION }}
+    
+    - name: Deploy to Cloud Run (Basic)
+      run: |
+        echo "Starting basic deployment to Cloud Run..."
+        echo "Service name: ${{ env.SERVICE_NAME }}"
+        echo "Region: ${{ env.REGION }}"
+        echo "Project: ${{ env.PROJECT_ID }}"
+        
         gcloud run deploy ${{ env.SERVICE_NAME }} \
           --source . \
           --platform managed \
           --region ${{ env.REGION }} \
-          --allow-unauthenticated \
-          --set-env-vars "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }},NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }},SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }},GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }},NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }},SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},NEXT_PUBLIC_APP_URL=${{ secrets.APP_URL }},WEBHOOK_SECRET=${{ secrets.WEBHOOK_SECRET }}"
+          --allow-unauthenticated
     
     - name: Show service URL
       run: |
+        echo "Getting service URL..."
         gcloud run services describe ${{ env.SERVICE_NAME }} \
           --platform managed \
           --region ${{ env.REGION }} \
