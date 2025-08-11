@@ -17,10 +17,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Google Auth
+    - name: Debug GCP_SA_KEY
+      run: |
+        echo "Checking GCP_SA_KEY length:"
+        echo "${{ secrets.GCP_SA_KEY }}" | wc -c
+        echo "First 100 characters:"
+        echo "${{ secrets.GCP_SA_KEY }}" | head -c 100
+        echo "Last 100 characters:"
+        echo "${{ secrets.GCP_SA_KEY }}" | tail -c 100
+    
+    - name: Google Auth (with error handling)
       uses: google-github-actions/auth@v2
       with:
         credentials_json: ${{ secrets.GCP_SA_KEY }}
+      continue-on-error: true
     
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
@@ -29,18 +39,10 @@ jobs:
       run: |
         gcloud config set project ${{ env.PROJECT_ID }}
         gcloud config set run/region ${{ env.REGION }}
-        echo "Project: ${{ env.PROJECT_ID }}"
-        echo "Region: ${{ env.REGION }}"
-        echo "Service: ${{ env.SERVICE_NAME }}"
     
-    - name: Check current services
+    - name: Try deployment without auth
       run: |
-        echo "Current Cloud Run services:"
-        gcloud run services list --region=${{ env.REGION }}
-    
-    - name: Try deployment with verbose logging
-      run: |
-        echo "Attempting deployment with verbose logging..."
+        echo "Attempting deployment..."
         gcloud run deploy ${{ env.SERVICE_NAME }} \
           --source . \
           --platform managed \
@@ -48,13 +50,10 @@ jobs:
           --allow-unauthenticated \
           --memory 512Mi \
           --cpu 1 \
-          --max-instances 10 \
-          --verbosity=debug
+          --max-instances 10
       continue-on-error: true
     
     - name: Check deployment status
       run: |
         echo "Checking deployment status..."
         gcloud run services list --region=${{ env.REGION }}
-        echo "Service details:"
-        gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} || echo "Service not found"
