@@ -19,6 +19,64 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Add new columns to existing users table if they don't exist
+DO $$ 
+BEGIN
+    -- Add first_name column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'first_name') THEN
+        ALTER TABLE users ADD COLUMN first_name VARCHAR(255);
+    END IF;
+    
+    -- Add last_name column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'last_name') THEN
+        ALTER TABLE users ADD COLUMN last_name VARCHAR(255);
+    END IF;
+    
+    -- Add address1 column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'address1') THEN
+        ALTER TABLE users ADD COLUMN address1 VARCHAR(500);
+    END IF;
+    
+    -- Add address2 column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'address2') THEN
+        ALTER TABLE users ADD COLUMN address2 VARCHAR(500);
+    END IF;
+    
+    -- Add city column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'city') THEN
+        ALTER TABLE users ADD COLUMN city VARCHAR(255);
+    END IF;
+    
+    -- Add state column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'state') THEN
+        ALTER TABLE users ADD COLUMN state VARCHAR(255);
+    END IF;
+    
+    -- Add zip_code column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'zip_code') THEN
+        ALTER TABLE users ADD COLUMN zip_code VARCHAR(20);
+    END IF;
+    
+    -- Add country column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'country') THEN
+        ALTER TABLE users ADD COLUMN country VARCHAR(255) DEFAULT 'United States';
+    END IF;
+    
+    -- Add phone_number column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'phone_number') THEN
+        ALTER TABLE users ADD COLUMN phone_number VARCHAR(50);
+    END IF;
+    
+    -- Drop old columns if they exist
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'full_name') THEN
+        ALTER TABLE users DROP COLUMN full_name;
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'shipping_address') THEN
+        ALTER TABLE users DROP COLUMN shipping_address;
+    END IF;
+END $$;
+
 -- Create orders table
 CREATE TABLE IF NOT EXISTS orders (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -36,6 +94,65 @@ CREATE TABLE IF NOT EXISTS orders (
     phone_number VARCHAR(50) NOT NULL,
     date_submitted TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add new columns to existing orders table if they don't exist
+DO $$ 
+BEGIN
+    -- Add first_name column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'first_name') THEN
+        ALTER TABLE orders ADD COLUMN first_name VARCHAR(255);
+    END IF;
+    
+    -- Add last_name column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'last_name') THEN
+        ALTER TABLE orders ADD COLUMN last_name VARCHAR(255);
+    END IF;
+    
+    -- Add email column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'email') THEN
+        ALTER TABLE orders ADD COLUMN email VARCHAR(255);
+    END IF;
+    
+    -- Add size column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'size') THEN
+        ALTER TABLE orders ADD COLUMN size VARCHAR(10);
+    END IF;
+    
+    -- Add address1 column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'address1') THEN
+        ALTER TABLE orders ADD COLUMN address1 VARCHAR(500);
+    END IF;
+    
+    -- Add address2 column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'address2') THEN
+        ALTER TABLE orders ADD COLUMN address2 VARCHAR(500);
+    END IF;
+    
+    -- Add city column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'city') THEN
+        ALTER TABLE orders ADD COLUMN city VARCHAR(255);
+    END IF;
+    
+    -- Add state column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'state') THEN
+        ALTER TABLE orders ADD COLUMN state VARCHAR(255);
+    END IF;
+    
+    -- Add zip_code column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'zip_code') THEN
+        ALTER TABLE orders ADD COLUMN zip_code VARCHAR(20);
+    END IF;
+    
+    -- Add country column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'country') THEN
+        ALTER TABLE orders ADD COLUMN country VARCHAR(255);
+    END IF;
+    
+    -- Add phone_number column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'phone_number') THEN
+        ALTER TABLE orders ADD COLUMN phone_number VARCHAR(50);
+    END IF;
+END $$;
 
 -- Create inventory table
 CREATE TABLE IF NOT EXISTS inventory (
