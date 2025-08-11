@@ -99,3 +99,4 @@ Private - Alteryx Internal Use Only
 # Trigger deployment with fixed GCP service account key
 # Test deployment with properly formatted GCP service account key
 # Deploy to production with all secrets configured
+# Deploy with corrected GCP_SA_KEY JSON format
