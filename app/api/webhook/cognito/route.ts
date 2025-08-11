@@ -2,13 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { isAlteryxEmail } from '@/lib/auth'
 
-const supabaseUrl = process.env.SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
 export async function POST(request: NextRequest) {
   try {
+    // Only create Supabase client if environment variables are available
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: 'Supabase configuration not available' },
+        { status: 500 }
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
     const body = await request.json()
     
     // Validate webhook secret if provided
@@ -46,6 +54,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Parse full name into first and last name
+    const nameParts = fullName.trim().split(' ')
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || ''
+
+    // Parse shipping address (basic parsing - you might want to improve this)
+    const addressParts = shippingAddress.split(',')
+    const address1 = addressParts[0]?.trim() || ''
+    const city = addressParts[1]?.trim() || ''
+    const stateZip = addressParts[2]?.trim() || ''
+    
+    // Basic state/zip parsing
+    const stateZipParts = stateZip.split(' ')
+    const state = stateZipParts[0] || ''
+    const zipCode = stateZipParts.slice(1).join(' ') || ''
+
     // Check if user already exists
     const { data: existingUser, error: checkError } = await supabase
       .from('users')
@@ -68,13 +92,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new user
+    // Create new user with new schema
     const { data: newUser, error: createError } = await supabase
       .from('users')
       .insert({
         email: email.toLowerCase(),
-        full_name: fullName,
-        shipping_address: shippingAddress,
+        first_name: firstName,
+        last_name: lastName,
+        address1: address1,
+        address2: '',
+        city: city,
+        state: state,
+        zip_code: zipCode,
+        country: 'United States',
+        phone_number: '',
         invited: true,
         order_submitted: false,
       })
