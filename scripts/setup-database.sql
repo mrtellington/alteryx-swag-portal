@@ -50,6 +50,14 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own profile" ON users;
+DROP POLICY IF EXISTS "Service role can manage users" ON users;
+DROP POLICY IF EXISTS "Users can view their own orders" ON orders;
+DROP POLICY IF EXISTS "Service role can manage orders" ON orders;
+DROP POLICY IF EXISTS "Authenticated users can view inventory" ON inventory;
+DROP POLICY IF EXISTS "Service role can manage inventory" ON inventory;
+
 -- Create RLS policies for users table
 CREATE POLICY "Users can view their own profile" ON users
     FOR SELECT USING (auth.uid() = id);
