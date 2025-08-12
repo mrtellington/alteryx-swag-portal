@@ -37,22 +37,41 @@ export function StorePage({ user, profile }: StorePageProps) {
       
       try {
         console.log('StorePage: Querying inventory table...')
-        const { data, error } = await supabase
+        
+        // Try the specific columns first
+        let { data, error } = await supabase
           .from('inventory')
           .select('quantity_available, name, sku')
           .single()
 
+        // If that fails, try a simpler query
+        if (error) {
+          console.log('StorePage: Specific query failed, trying simple query...')
+          const { data: simpleData, error: simpleError } = await supabase
+            .from('inventory')
+            .select('*')
+            .single()
+          
+          if (simpleError) {
+            console.error('StorePage: Simple query also failed:', simpleError)
+            throw simpleError
+          } else {
+            console.log('StorePage: Simple query succeeded:', simpleData)
+            data = simpleData
+          }
+        } else {
+          console.log('StorePage: Specific query succeeded:', data)
+        }
+
         // Clear the timeout since we got a response
         clearTimeout(timeoutId)
 
-        if (error) {
-          console.error('StorePage: Error fetching inventory:', error)
-          toast.error('Failed to load inventory')
-          // Set inventory to null but still set loading to false
-          setInventory(null)
-        } else {
+        if (data) {
           console.log('StorePage: Inventory loaded successfully:', data)
           setInventory(data)
+        } else {
+          console.log('StorePage: No inventory data returned')
+          setInventory(null)
         }
       } catch (error) {
         // Clear the timeout since we got an exception
