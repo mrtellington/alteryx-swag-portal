@@ -26,12 +26,24 @@ export function StorePage({ user, profile }: StorePageProps) {
   useEffect(() => {
     const checkInventory = async () => {
       console.log('StorePage: Starting inventory check...')
+      
+      // Add a timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        console.log('StorePage: Inventory query timeout reached')
+        setInventory(null)
+        setLoading(false)
+        toast.error('Failed to load inventory - timeout')
+      }, 5000) // 5 second timeout
+      
       try {
         console.log('StorePage: Querying inventory table...')
         const { data, error } = await supabase
           .from('inventory')
           .select('quantity_available, name, sku')
           .single()
+
+        // Clear the timeout since we got a response
+        clearTimeout(timeoutId)
 
         if (error) {
           console.error('StorePage: Error fetching inventory:', error)
@@ -43,6 +55,8 @@ export function StorePage({ user, profile }: StorePageProps) {
           setInventory(data)
         }
       } catch (error) {
+        // Clear the timeout since we got an exception
+        clearTimeout(timeoutId)
         console.error('StorePage: Exception checking inventory:', error)
         toast.error('Failed to load inventory')
         // Set inventory to null but still set loading to false
