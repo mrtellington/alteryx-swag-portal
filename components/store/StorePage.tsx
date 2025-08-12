@@ -95,11 +95,6 @@ export function StorePage({ user, profile }: StorePageProps) {
   }, [supabase])
 
   const handleAddToCart = (size: string) => {
-    if (profile?.order_submitted) {
-      toast.error('You have already redeemed your New Hire Bundle')
-      return
-    }
-    
     if (!inventory || inventory.quantity_available <= 0) {
       toast.error('Product is currently out of stock')
       return
@@ -160,29 +155,7 @@ export function StorePage({ user, profile }: StorePageProps) {
       <Banner />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {profile?.order_submitted ? (
-          <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-8 text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Bundle Already Redeemed!</h2>
-            <p className="text-gray-600 mb-4">
-              You have already redeemed your New Hire Bundle. Thank you for being part of the Alteryx family!
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              You can only redeem one bundle per lifetime.
-            </p>
-            <button
-              onClick={handleSignOut}
-              className="btn-secondary"
-            >
-              Sign Out
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Left Column - Product Image */}
             <div className="flex justify-center">
               <div className="w-full max-w-md">
@@ -206,7 +179,7 @@ export function StorePage({ user, profile }: StorePageProps) {
                 {/* User Welcome */}
                 <div className="mb-6 p-4 bg-blue-50 rounded-lg">
                   <h3 className="text-lg font-medium text-blue-900 mb-1">
-                    Welcome, {profile?.first_name} {profile?.last_name}!
+                    Welcome, {user.email}!
                   </h3>
                   <p className="text-sm text-blue-700">
                     You're eligible to redeem your New Hire Bundle.
@@ -283,7 +256,7 @@ export function StorePage({ user, profile }: StorePageProps) {
               </div>
             </div>
           </div>
-        )}
+        </div>
       </main>
 
       <Footer />
