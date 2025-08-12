@@ -46,6 +46,7 @@ export default function HomePage() {
 
         if (accessToken && refreshToken) {
           console.log('Both tokens found, creating simple user object...')
+          console.log('DEPLOYMENT TEST - NEW CODE VERSION 1.0')
           
           try {
             // Decode the JWT token to get user info
