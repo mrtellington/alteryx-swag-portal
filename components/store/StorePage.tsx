@@ -25,27 +25,40 @@ export function StorePage({ user, profile }: StorePageProps) {
 
   useEffect(() => {
     const checkInventory = async () => {
+      console.log('StorePage: Starting inventory check...')
       try {
+        console.log('StorePage: Querying inventory table...')
         const { data, error } = await supabase
           .from('inventory')
-          .select('quantity_available')
+          .select('quantity_available, name, sku')
           .single()
 
         if (error) {
-          console.error('Error fetching inventory:', error)
+          console.error('StorePage: Error fetching inventory:', error)
           toast.error('Failed to load inventory')
+          // Set inventory to null but still set loading to false
+          setInventory(null)
         } else {
+          console.log('StorePage: Inventory loaded successfully:', data)
           setInventory(data)
         }
       } catch (error) {
-        console.error('Error checking inventory:', error)
+        console.error('StorePage: Exception checking inventory:', error)
         toast.error('Failed to load inventory')
+        // Set inventory to null but still set loading to false
+        setInventory(null)
       } finally {
+        console.log('StorePage: Setting loading to false')
         setLoading(false)
       }
     }
 
-    checkInventory()
+    if (supabase) {
+      checkInventory()
+    } else {
+      console.log('StorePage: Supabase client not available, setting loading to false')
+      setLoading(false)
+    }
   }, [supabase])
 
   const handleAddToCart = (size: string) => {
