@@ -2,10 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ServiceNow Sans Font Definitions */
+@font-face {
+  font-family: 'ServiceNow Sans';
+  src: local('ServiceNow Sans'),
+       local('ServiceNowSans'),
+       url('/fonts/ServiceNowSans-Regular.woff2') format('woff2'),
+       url('/fonts/ServiceNowSans-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ServiceNow Sans';
+  src: local('ServiceNow Sans Medium'),
+       local('ServiceNowSans-Medium'),
+       url('/fonts/ServiceNowSans-Medium.woff2') format('woff2'),
+       url('/fonts/ServiceNowSans-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ServiceNow Sans';
+  src: local('ServiceNow Sans Bold'),
+       local('ServiceNowSans-Bold'),
+       url('/fonts/ServiceNowSans-Bold.woff2') format('woff2'),
+       url('/fonts/ServiceNowSans-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Gilroy Font Definitions (fallback) */
+@font-face {
+  font-family: 'Gilroy';
+  src: local('Gilroy'),
+       local('Gilroy-Regular'),
+       url('/fonts/Gilroy-Regular.woff2') format('woff2'),
+       url('/fonts/Gilroy-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gilroy';
+  src: local('Gilroy Medium'),
+       local('Gilroy-Medium'),
+       url('/fonts/Gilroy-Medium.woff2') format('woff2'),
+       url('/fonts/Gilroy-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gilroy';
+  src: local('Gilroy Bold'),
+       local('Gilroy-Bold'),
+       url('/fonts/Gilroy-Bold.woff2') format('woff2'),
+       url('/fonts/Gilroy-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 255, 255, 255;
   --background-end-rgb: 255, 255, 255;
+  --font-servicenow: 'ServiceNow Sans', 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 * {
@@ -163,4 +232,31 @@ p, span, div, input, textarea, select, button, label, li {
 .pac-matched {
   font-weight: 600 !important;
   color: #0066CC !important;
+}
+
+/* CognitoForms iframe styling with ServiceNow Sans font */
+.cognito-form-container {
+  font-family: var(--font-servicenow) !important;
+}
+
+.cognito-form-container iframe {
+  font-family: var(--font-servicenow) !important;
+}
+
+/* Ensure all elements within the iframe use ServiceNow Sans */
+.cognito-form-container *,
+.cognito-form-container iframe * {
+  font-family: var(--font-servicenow) !important;
+}
+
+/* Specific styling for form elements */
+.cognito-form-container input,
+.cognito-form-container textarea,
+.cognito-form-container select,
+.cognito-form-container button,
+.cognito-form-container label,
+.cognito-form-container div,
+.cognito-form-container span,
+.cognito-form-container p {
+  font-family: var(--font-servicenow) !important;
 }
